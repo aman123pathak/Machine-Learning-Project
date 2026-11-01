@@ -1,8 +1,9 @@
-pandas --prefer-binary
-numpy --prefer-binary
-seaborn --prefer-binary
-matplotlib --prefer-binary
-catboost --prefer-binary
-xgboost --prefer-binary
-dill --prefer-binary
--e .
+pandas
+numpy
+seaborn
+matplotlib
+catboost
+xgboost
+dill
+flask
+gunicorn
