@@ -1,7 +1,10 @@
 from flask import Flask,request,render_template
 import numpy as np
 import pandas as pd
+import sys
 from sklearn.preprocessing import StandardScaler
+from src.logger import logging
+from src.exception import CustomException
 from src.pipeline.predict_pipeline import CustomData, PredictPipeline
 
 application = Flask(__name__)
@@ -16,7 +19,7 @@ def index():
 def predict_datapoint():
     if request.method=='GET':
         return render_template('home.html')
-    else:
+    try:
         data=CustomData(
             gender=request.form.get('gender'),
             race_ethnicity=request.form.get('ethnicity'),
@@ -27,11 +30,21 @@ def predict_datapoint():
             writing_score=request.form.get('writing_score')
         )
         pred_df=data.get_data_as_data_frame()
-        print(pred_df)
+        logging.info("Received student data for prediction")
         
         Predict_pipeline=PredictPipeline()
         results=Predict_pipeline.predict(pred_df)
-        return render_template('home.html', results=results[0])
+        return render_template('home.html', results=round(float(results[0]), 2))
+    
+    except Exception as e:
+        logging.exception("Prediction failed")
+
+        return render_template(
+            'home.html',
+            error="Unable to generate prediction. Please check your inputs."
+        ), 500
     
 if __name__=="__main__":
-    app.run(host="0.0.0.0")
+    print("Starting Student Performance Prediction App...")
+    print("Open this link: http://127.0.0.1:5000")
+    app.run(host="0.0.0.0", port=5000, debug=False)

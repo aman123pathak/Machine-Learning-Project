@@ -2,6 +2,7 @@ import sys
 import os
 import numpy as np
 import pandas as pd
+from pathlib import Path
 from dataclasses import dataclass
 
 from sklearn.compose import ColumnTransformer   #used to create pipeline
@@ -14,9 +15,11 @@ from src.logger import logging
 
 from src.utils import save_object
 
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+
 @dataclass
 class DataTransformationConfig:
-    preprocessor_obj_file_path=os.path.join('artifacts', 'preprocessor.pkl')
+    preprocessor_obj_file_path=(PROJECT_ROOT / "artifacts" / "preprocessor.pkl")
     
 class DataTransformation:
     def __init__(self):
@@ -39,8 +42,7 @@ class DataTransformation:
             cat_pipeline = Pipeline(
                 steps=[
                     ("imputer", SimpleImputer(strategy="most_frequent")),
-                    ("one_hot_encoder", OneHotEncoder()),
-                    #("scaler", StandardScaler())
+                    ("one_hot_encoder", OneHotEncoder(handle_unknown="ignore"))
                 ]
             )
             
@@ -48,7 +50,7 @@ class DataTransformation:
             logging.info(f"Categorical columns: {categorical_columns}")
             
             preprocessor=ColumnTransformer(
-                [
+                transformers = [
                     ("num_pipeline", num_pipeline, numerical_columns),
                     ("cat_pipeline", cat_pipeline, categorical_columns)
                 ]
@@ -62,13 +64,11 @@ class DataTransformation:
             train_df = pd.read_csv(train_path)
             test_df = pd.read_csv(test_path)
             
-            logging.info("Read train and test data completed")
-            logging.info("obtaining preprocessing object")
+            logging.info("Train and test data loaded successfully")
             
             preprocessing_obj=self.get_data_transformer_object()
             
             target_column_name="math_score"
-            numerical_columns = ["writing_score", "reading_score"]
             
             input_feature_train_df=train_df.drop(columns=[target_column_name], axis=1)
             target_feature_train_df=train_df[target_column_name]
@@ -76,24 +76,30 @@ class DataTransformation:
             input_feature_test_df=test_df.drop(columns=[target_column_name], axis=1)
             target_feature_test_df=test_df[target_column_name]
             
-            logging.info(
-                f"Applying preprocessing object on training dataframe and testing dataframe."
-            )
+            logging.info("Applying preprocessing object")
             
             input_feature_train_arr=preprocessing_obj.fit_transform(input_feature_train_df)
             input_feature_test_arr=preprocessing_obj.transform(input_feature_test_df)
             
+            # Convert sparse matrices to dense arrays if necessary
+            if sparse.issparse(input_feature_train_arr):
+                input_feature_train_arr = input_feature_train_arr.toarray()
+
+            if sparse.issparse(input_feature_test_arr):
+                input_feature_test_arr = input_feature_test_arr.toarray()
+                
             train_arr = np.c_[
-                input_feature_train_arr, np.array(target_feature_train_df)
+                input_feature_train_arr, np.asarray(target_feature_train_df)
             ]
             test_arr = np.c_[
-                input_feature_test_arr, np.array(target_feature_test_df)
+                input_feature_test_arr, np.asarray(target_feature_test_df)
             ]
             
             save_object(
                 file_path=self.data_transformation_config.preprocessor_obj_file_path,
                 obj=preprocessing_obj
             )
+            logging.info("Preprocessor saved successfully")
             return (
                 train_arr,
                 test_arr,

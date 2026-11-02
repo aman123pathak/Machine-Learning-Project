@@ -12,11 +12,14 @@ from src.components.data_transformation import DataTransformationConfig
 from src.components.model_trainer import ModelTrainerConfig
 from src.components.model_trainer import ModelTrainer
 
+# Project root directory
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+
 @dataclass
 class DataIngestionConfig:
-    train_data_path: str=os.path.join('artifacts', "train.csv")
-    test_data_path: str=os.path.join('artifacts', "test.csv")
-    raw_data_path: str=os.path.join('artifacts', "data.csv")
+    train_data_path: str=PROJECT_ROOT / "artifacts" / "train.csv"
+    test_data_path: str=PROJECT_ROOT / "artifacts" / "test.csv"
+    raw_data_path: str=PROJECT_ROOT / "artifacts" / "data.csv"
     
 class DataIngestion:
     def __init__(self):
@@ -25,10 +28,14 @@ class DataIngestion:
     def initiate_data_ingestion(self): 
         logging.info("Entered the data ingestion method or component")
         try:
-            df=pd.read_csv('notebook/data/stud.csv')
+            # Read original dataset
+            data_path = PROJECT_ROOT / "notebook" / "data" / "stud.csv"
+            
+            df=pd.read_csv(data_path)
             logging.info('Read the dataset as dataframe')
             
-            os.makedirs(os.path.dirname(self.ingestion_config.train_data_path), exist_ok=True)
+            artifacts_dir = PROJECT_ROOT / "artifacts" 
+            artifacts_dir.mkdir(parents=True, exist_ok=True)
             
             df.to_csv(self.ingestion_config.raw_data_path,index=False,header=True)
             
@@ -38,6 +45,8 @@ class DataIngestion:
             train_set.to_csv(self.ingestion_config.train_data_path,index=False,header=True)
             test_set.to_csv(self.ingestion_config.test_data_path,index=False,header=True)
             
+            logging.info(f"Training dataset shape: {train_set.shape}")
+            logging.info(f"Testing dataset shape: {test_set.shape}")
             logging.info("Ingestion of data is completed")
             
             return(
@@ -45,6 +54,7 @@ class DataIngestion:
                 self.ingestion_config.test_data_path
             )
         except Exception as e:
+            logging.error("Error occurred during data ingestion")
             raise CustomException(e, sys)
 
 if __name__=="__main__":

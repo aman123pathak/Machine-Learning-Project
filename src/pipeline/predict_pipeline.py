@@ -1,7 +1,10 @@
 import sys
+from pathlib import Path
 import pandas as pd
 from src.exception import CustomException
 from src.utils import load_object
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 class PredictPipeline:
     def __init__(self):
@@ -9,8 +12,8 @@ class PredictPipeline:
     
     def predict(self, features):
         try:
-            model_path='artifacts\model.pkl'
-            preprocessor_path='artifacts\preprocessor.pkl'
+            model_path=PROJECT_ROOT / "artifacts" / "model.pkl"
+            preprocessor_path=PROJECT_ROOT / "artifacts" / "preprocessor.pkl"
             model=load_object(file_path=model_path)
             preprocessor=load_object(file_path=preprocessor_path)
             data_scaled=preprocessor.transform(features)
@@ -28,7 +31,8 @@ class CustomData:
         lunch: str,
         test_preparation_course: str,
         reading_score: int,
-        writing_score: int):
+        writing_score: int
+        ):
         self.gender = gender
         self.race_ethnicity = race_ethnicity
         self.parental_level_of_education = parental_level_of_education
